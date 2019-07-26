@@ -1,5 +1,6 @@
 from fastai.vision import *
 from fastai.datasets import *
+from fastai.imports import *
 import pandas as pd
 
 
@@ -9,9 +10,6 @@ import pandas as pd
 # planet_tfms = get_transforms(flip_vert=True, max_lighting=0.1, max_zoom=1.05, max_warp=0.)
 
 coco = untar_data(URLs.COCO_TINY)
-
-coco
-
 
 # json is quiet clear - not sure why get_annotations returns such structures who then needs to be further put into image_name: [[bboxes], [classes]]
 images, lbl_bbox = get_annotations(coco/'train.json')
@@ -25,16 +23,31 @@ get_y_func = lambda o:img2bbox[o.name]
 # calling .name on PosixPath returns the name of the file
 
 
-data = (ObjectItemList.from_folder(coco).random_split_by_pct().label_from_func(get_y_func).transform(get_transforms(), tfm_y=True).databunch(bs=16, collate_fn=bb_pad_collate))
+data = (ObjectItemList.from_folder(coco).
+        random_split_by_pct().
+        label_from_func(get_y_func).
+        transform(get_transforms(), tfm_y=True).
+        databunch(bs=16, collate_fn=bb_pad_collate).
+        normalize(imagenet_stats))
 
 data.show_batch(rows=5, ds_type=DatasetType.Valid, figsize=(10,10))
+
+
+arch = models.resnet50
+acc_02 = partial(accuracy_thresh, thresh=0.2)
+f_score = partial(fbeta, thresh=0.2)
+learner = cnn_learner(data, arch, metrics=[acc_02, f_score])
+max_lr = 1e-3
+lrs = np.array([max_lr/100, max_lr/10, max_lr])
+
+learner.fit_one_cycle(5, lrs)
+
 
 # show sample image
 # show_image(image_list.open(coco/'train/000000070459.jpg'))
 
 
-
-img2bbox[coco/'train/000000070459.jpg']
+# img2bbox[coco/'train/000000070459.jpg']
 
 
 
