@@ -37,10 +37,15 @@ arch = models.resnet50
 acc_02 = partial(accuracy_thresh, thresh=0.2)
 f_score = partial(fbeta, thresh=0.2)
 learner = cnn_learner(data, arch, metrics=[acc_02, f_score])
+
 max_lr = 1e-3
 lrs = np.array([max_lr/100, max_lr/10, max_lr])
 
 learner.fit_one_cycle(5, lrs)
+
+
+# test
+
 
 
 # show sample image
